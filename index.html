@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3-Laender-Tennis 60+ Verwaltung</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">3-Laender-Tennis 60+</p>
+      <h1>Saisonverwaltung</h1>
+    </div>
+    <div class="season-control">
+      <label for="seasonYear">Saison</label>
+      <input id="seasonYear" type="number" min="2026" max="2099" value="2026">
+      <button id="resetDemo" type="button" class="ghost">Beispieldaten laden</button>
+    </div>
+  </header>
+
+  <main>
+    <nav class="tabs" aria-label="Bereiche">
+      <button class="tab active" type="button" data-view="overview">Uebersicht</button>
+      <button class="tab" type="button" data-view="planning">Saison planen</button>
+      <button class="tab" type="button" data-view="results">Ergebnis erfassen</button>
+      <button class="tab" type="button" data-view="concept">Konzept</button>
+    </nav>
+
+    <section id="overview" class="view active" aria-labelledby="overviewTitle">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Live-Stand</p>
+          <h2 id="overviewTitle">Tabellen und naechste Spiele</h2>
+        </div>
+        <div class="status-pill" id="lastUpdated">Noch nicht gespeichert</div>
+      </div>
+      <div id="overviewGrid" class="overview-grid"></div>
+    </section>
+
+    <section id="planning" class="view" aria-labelledby="planningTitle">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Vor der Saison</p>
+          <h2 id="planningTitle">Gruppen flexibel zusammenstellen</h2>
+        </div>
+        <button id="addGroup" type="button">Gruppe hinzufuegen</button>
+      </div>
+      <div class="planner-layout">
+        <aside class="side-panel">
+          <h3>Gruppen</h3>
+          <div id="groupList" class="group-list"></div>
+        </aside>
+        <div class="work-panel">
+          <div class="field-row">
+            <label>
+              Gruppenname
+              <input id="groupName" type="text">
+            </label>
+            <label>
+              Saisonstart
+              <input id="seasonStart" type="date">
+            </label>
+            <label>
+              Spieltag-Abstand
+              <select id="roundInterval">
+                <option value="7">woechentlich</option>
+                <option value="14">alle 2 Wochen</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Mannschaften, eine pro Zeile. Bei ungerader Anzahl wird automatisch ein Freilos erzeugt.
+            <textarea id="teamsInput" rows="8"></textarea>
+          </label>
+          <div class="button-row">
+            <button id="saveGroup" type="button">Gruppe speichern</button>
+            <button id="generateSchedule" type="button" class="secondary">Spielplan erzeugen</button>
+          </div>
+          <div class="manual-match">
+            <h3>Spiel manuell ergaenzen</h3>
+            <div class="field-row">
+              <label>
+                Datum
+                <input id="manualDate" type="date">
+              </label>
+              <label>
+                Heim
+                <select id="manualHome"></select>
+              </label>
+              <label>
+                Gast
+                <select id="manualAway"></select>
+              </label>
+              <button id="addMatch" type="button" class="secondary">Hinzufuegen</button>
+            </div>
+          </div>
+          <div id="scheduleEditor"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="results" class="view" aria-labelledby="resultsTitle">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Nach dem Spiel</p>
+          <h2 id="resultsTitle">Ergebnis erfassen</h2>
+        </div>
+        <div class="status-pill">Link-Ansicht fuer Mannschaften</div>
+      </div>
+      <div class="result-layout">
+        <div class="work-panel">
+          <div class="field-row">
+            <label>
+              Gruppe
+              <select id="resultGroup"></select>
+            </label>
+            <label>
+              Begegnung
+              <select id="resultMatch"></select>
+            </label>
+          </div>
+          <div id="selectedMatch" class="selected-match"></div>
+          <div id="lockedNotice" class="locked-notice" hidden></div>
+          <div class="doubles-entry" aria-label="Doppel-Ergebnisse">
+            <div class="doubles-head">
+              <span>Doppel</span>
+              <span>1. Satz</span>
+              <span>2. Satz</span>
+              <span>3. Satz / Match-Tiebreak</span>
+              <span>Wertung</span>
+            </div>
+            <div id="doublesRows"></div>
+          </div>
+          <div class="button-row">
+            <button id="calculateResult" type="button" class="secondary">Ergebnis berechnen</button>
+            <button id="saveResult" type="button">Ergebnis speichern</button>
+          </div>
+          <div class="computed-result" id="computedResult"></div>
+          <div class="report-upload">
+            <h3>Spielbericht</h3>
+            <p class="muted">JPG, PNG oder PDF hochladen. Der Bericht bleibt direkt dieser Begegnung zugeordnet.</p>
+            <input id="reportFile" type="file" accept="image/*,.pdf">
+            <div id="reportList" class="report-list"></div>
+          </div>
+          <div class="approval-box">
+            <h3>Freigabe</h3>
+            <p class="muted">Nach Freigabe durch den Verantwortlichen oder Stellvertreter ist der Meldelink fuer Teams gesperrt.</p>
+            <div class="field-row two">
+              <label>
+                Freigegeben durch
+                <select id="approvedBy">
+                  <option value="Verantwortlicher">Verantwortlicher</option>
+                  <option value="Stellvertreter">Stellvertreter</option>
+                </select>
+              </label>
+              <button id="approveResult" type="button">Ergebnis freigeben</button>
+              <button id="unlockResult" type="button" class="secondary">Freigabe aufheben</button>
+            </div>
+          </div>
+        </div>
+        <aside class="side-panel">
+          <h3>Erfassungslinks</h3>
+          <p class="muted">In der echten Version erhaelt jede Begegnung einen privaten Link. Hier wird die Logik simuliert.</p>
+          <div id="linkList" class="link-list"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="concept" class="view" aria-labelledby="conceptTitle">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Von Excel/PDF zur Online-Runde</p>
+          <h2 id="conceptTitle">Konzept und Umsetzungsvorschlag</h2>
+        </div>
+      </div>
+      <div class="concept-grid">
+        <article>
+          <h3>1. Verantwortlichen-Bereich</h3>
+          <p>Saison anlegen, Gruppen A/B oder weitere Gruppen definieren, Mannschaften pflegen, Spielplan automatisch erzeugen oder manuell anpassen.</p>
+        </article>
+        <article>
+          <h3>2. Mannschaftslink</h3>
+          <p>Jede Begegnung bekommt einen eindeutigen Link. Die Heimmannschaft oder beide Mannschaften koennen Spiele, Saetze und Punkte erfassen.</p>
+        </article>
+        <article>
+          <h3>3. Live-Tabelle</h3>
+          <p>Nach dem Speichern werden Tabellen sofort neu berechnet. Sortierung: Matchpunkte, Satzdifferenz, Spieldifferenz, danach Name.</p>
+        </article>
+        <article>
+          <h3>4. Kontrolle</h3>
+          <p>Optional kann ein Ergebnis erst als "gemeldet" erscheinen und vom Verantwortlichen bestaetigt werden. Aenderungen bleiben nachvollziehbar.</p>
+        </article>
+      </div>
+      <div class="questions">
+        <h3>Offene Entscheidungen</h3>
+        <ul>
+          <li>Welche Personen bekommen Verantwortlichen- und Stellvertreter-Rechte?</li>
+          <li>Soll pro Meldelink ein Bearbeitungszeitfenster gelten, zum Beispiel bis 48 Stunden nach Spielende?</li>
+          <li>Braucht ihr spaeter Export nach Excel/PDF im bisherigen Layout?</li>
+          <li>Sollen die Namen der sechs Spieler pro Team ebenfalls digital erfasst werden?</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <template id="tableTemplate">
+    <article class="group-block">
+      <div class="block-head">
+        <h3></h3>
+        <span></span>
+      </div>
+      <div class="table-wrap"></div>
+      <h4>Naechste Spiele</h4>
+      <div class="next-matches"></div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>

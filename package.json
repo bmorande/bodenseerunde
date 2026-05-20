@@ -1,0 +1,10 @@
+{
+  "name": "bodenseerunde",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Online-Spielplan, Ergebnismeldung und Live-Tabellen fuer die 3-Laender-Tennisrunde 60+.",
+  "scripts": {
+    "start": "npx serve .",
+    "deploy": "vercel --prod"
+  }
+}
