@@ -222,7 +222,20 @@
     </article>
   </template>
 
-  <script src="app-config.js?v=20260520-1810"></script>
-  <script src="app.js?v=20260520-1810"></script>
+  <div id="reportViewer" class="report-viewer" hidden>
+    <div class="report-viewer-panel" role="dialog" aria-modal="true" aria-labelledby="reportViewerTitle">
+      <div class="report-viewer-head">
+        <h3 id="reportViewerTitle">Spielbericht</h3>
+        <div class="button-row compact">
+          <button id="printReport" type="button" class="secondary">Drucken</button>
+          <button id="closeReportViewer" type="button">Schliessen</button>
+        </div>
+      </div>
+      <div id="reportViewerBody" class="report-viewer-body"></div>
+    </div>
+  </div>
+
+  <script src="app-config.js?v=20260520-1840"></script>
+  <script src="app.js?v=20260520-1840"></script>
 </body>
 </html>

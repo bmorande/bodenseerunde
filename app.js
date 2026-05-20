@@ -98,6 +98,11 @@ const els = {
   computedResult: document.querySelector("#computedResult"),
   reportFile: document.querySelector("#reportFile"),
   reportList: document.querySelector("#reportList"),
+  reportViewer: document.querySelector("#reportViewer"),
+  reportViewerTitle: document.querySelector("#reportViewerTitle"),
+  reportViewerBody: document.querySelector("#reportViewerBody"),
+  closeReportViewer: document.querySelector("#closeReportViewer"),
+  printReport: document.querySelector("#printReport"),
   approvedBy: document.querySelector("#approvedBy"),
   approveResult: document.querySelector("#approveResult"),
   unlockResult: document.querySelector("#unlockResult"),
@@ -313,8 +318,8 @@ function renderOverview() {
           <div class="match-row played">
             <span>${formatDate(item.date)}</span>
             <strong>${item.home} - ${item.away}</strong>
-            <span class="result-badge">${item.pointsHome}:${item.pointsAway} Doppel</span>
-            <span>Saetze ${item.setsHome}:${item.setsAway}<br>Spiele ${item.gamesHome}:${item.gamesAway}</span>
+            <span class="result-badge">${item.pointsHome}:${item.pointsAway}</span>
+            <span class="score-detail">Saetze ${item.setsHome}:${item.setsAway} · Spiele ${item.gamesHome}:${item.gamesAway}</span>
             ${reportIcon(item)}
           </div>
         `).join("")
@@ -355,14 +360,38 @@ function openReport(matchId) {
     alert("Zu diesem Ergebnis ist kein Spielbericht gespeichert.");
     return;
   }
-  const link = document.createElement("a");
-  link.href = dataUrl;
-  link.target = "_blank";
-  link.rel = "noopener";
-  link.download = report.name || "spielbericht";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+  els.reportViewerTitle.textContent = report.name || "Spielbericht";
+  els.reportViewerBody.innerHTML = isImageReport(report, dataUrl)
+    ? `<img src="${dataUrl}" alt="Spielbericht">`
+    : `<iframe src="${dataUrl}" title="Spielbericht"></iframe>`;
+  els.reportViewer.hidden = false;
+}
+
+function isImageReport(report, dataUrl) {
+  const type = report?.type || "";
+  const name = (report?.name || "").toLowerCase();
+  return type.startsWith("image/") || dataUrl.startsWith("data:image/") || /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
+}
+
+function closeReportViewer() {
+  els.reportViewer.hidden = true;
+  els.reportViewerBody.innerHTML = "";
+}
+
+function printCurrentReport() {
+  const frame = els.reportViewerBody.querySelector("iframe");
+  if (frame?.contentWindow) {
+    frame.contentWindow.print();
+    return;
+  }
+  const image = els.reportViewerBody.querySelector("img");
+  if (!image) return;
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) return;
+  printWindow.document.write(`<!doctype html><title>${els.reportViewerTitle.textContent}</title><style>body{margin:0}img{width:100%;height:auto}</style><img src="${image.src}">`);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
 }
 
 function standingsTable(rows) {
@@ -711,6 +740,22 @@ els.overviewGrid.addEventListener("click", event => {
   button.textContent = shouldShow
     ? "Restliche Spiele ausblenden"
     : `Restliche Spiele anzeigen (${extras.length})`;
+});
+
+els.closeReportViewer.addEventListener("click", closeReportViewer);
+
+els.reportViewer.addEventListener("click", event => {
+  if (event.target === els.reportViewer) {
+    closeReportViewer();
+  }
+});
+
+els.printReport.addEventListener("click", printCurrentReport);
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !els.reportViewer.hidden) {
+    closeReportViewer();
+  }
 });
 
 els.addGroup.addEventListener("click", () => {
