@@ -342,6 +342,11 @@ th.number {
   padding-bottom: 8px;
 }
 
+.toggle-extra-matches {
+  margin: 0 18px 12px;
+  width: calc(100% - 36px);
+}
+
 .match-row,
 .schedule-row {
   display: grid;
@@ -355,7 +360,7 @@ th.number {
 }
 
 .match-row.played {
-  grid-template-columns: 92px minmax(0, 1fr) 150px 150px;
+  grid-template-columns: 92px minmax(0, 1fr) 150px 150px 46px;
 }
 
 .result-badge {
@@ -366,6 +371,28 @@ th.number {
   padding: 8px 10px;
   text-align: center;
   white-space: nowrap;
+}
+
+.report-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--brand-dark);
+  text-decoration: none;
+  background: #fff;
+}
+
+.report-icon:hover {
+  background: var(--soft);
+}
+
+.report-icon.empty-report {
+  color: var(--muted);
+  opacity: .45;
+  cursor: default;
 }
 
 .match-row strong,
@@ -551,5 +578,9 @@ th.number {
 
   .match-row.played {
     grid-template-columns: 1fr;
+  }
+
+  .report-icon {
+    width: 100%;
   }
 }
