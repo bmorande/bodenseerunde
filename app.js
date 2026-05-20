@@ -1,6 +1,6 @@
 const STORAGE_KEY = "tennisrunde-saison-v1";
 const CONFIG = window.BODENSEERUNDE_CONFIG || {};
-let supabaseClient = null;
+let remoteStoreEnabled = false;
 let storageMode = "local";
 
 const demoState = {
@@ -145,51 +145,68 @@ async function saveState() {
 }
 
 function configureRemoteStore() {
-  const hasConfig = CONFIG.supabaseUrl && CONFIG.supabaseAnonKey && window.supabase;
+  const hasConfig = CONFIG.supabaseUrl && CONFIG.supabaseAnonKey;
   if (!hasConfig) {
     storageMode = "local";
     return;
   }
-  supabaseClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
+  remoteStoreEnabled = true;
   storageMode = "online";
 }
 
 async function loadRemoteState() {
-  if (!supabaseClient) return null;
+  if (!remoteStoreEnabled) return null;
   const seasonId = CONFIG.seasonId || String(demoState.year);
-  const { data, error } = await supabaseClient
-    .from("app_state")
-    .select("data")
-    .eq("id", seasonId)
-    .maybeSingle();
-  if (error) {
+  try {
+    const response = await fetch(`${CONFIG.supabaseUrl}/rest/v1/app_state?id=eq.${encodeURIComponent(seasonId)}&select=data`, {
+      headers: remoteHeaders()
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const rows = await response.json();
+    const data = rows[0];
+    if (!data || !data.data || Object.keys(data.data).length === 0) {
+      await saveRemoteState(structuredClone(demoState));
+      return structuredClone(demoState);
+    }
+    storageMode = "online";
+    return data.data;
+  } catch (error) {
     console.warn("Online-Daten konnten nicht geladen werden.", error);
     storageMode = "local";
     return null;
   }
-  if (!data || !data.data || Object.keys(data.data).length === 0) {
-    await saveRemoteState(structuredClone(demoState));
-    return structuredClone(demoState);
-  }
-  storageMode = "online";
-  return data.data;
 }
 
 async function saveRemoteState(nextState = state) {
-  if (!supabaseClient) return;
+  if (!remoteStoreEnabled) return;
   const seasonId = CONFIG.seasonId || String(nextState.year || demoState.year);
-  const { error } = await supabaseClient
-    .from("app_state")
-    .upsert({
-      id: seasonId,
-      data: nextState,
-      updated_at: new Date().toISOString()
+  try {
+    const response = await fetch(`${CONFIG.supabaseUrl}/rest/v1/app_state`, {
+      method: "POST",
+      headers: {
+        ...remoteHeaders(),
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+      },
+      body: JSON.stringify({
+        id: seasonId,
+        data: nextState,
+        updated_at: new Date().toISOString()
+      })
     });
-  if (error) {
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  } catch (error) {
     console.warn("Online-Daten konnten nicht gespeichert werden.", error);
     storageMode = "local";
     render();
   }
+}
+
+function remoteHeaders() {
+  return {
+    "apikey": CONFIG.supabaseAnonKey,
+    "Authorization": `Bearer ${CONFIG.supabaseAnonKey}`
+  };
 }
 
 function currentGroup() {
@@ -308,20 +325,43 @@ function renderOverview() {
 
 function reportIcon(matchItem) {
   normalizeMatch(matchItem);
-  const report = matchItem.reports[0];
+  const report = matchItem.reports.find(item => reportDataUrl(item));
   if (!report) {
     return `<span class="report-icon empty-report" title="Kein Spielbericht">-</span>`;
   }
   return `
-    <a class="report-icon" href="${report.dataUrl}" target="_blank" rel="noopener" title="Spielbericht oeffnen">
+    <button class="report-icon" type="button" data-report-match="${matchItem.id}" title="Spielbericht oeffnen">
       <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
         <path d="M14 2v6h6"></path>
         <path d="M8 13h8"></path>
         <path d="M8 17h5"></path>
       </svg>
-    </a>
+    </button>
   `;
+}
+
+function reportDataUrl(report) {
+  return report?.dataUrl || report?.data_url || report?.url || "";
+}
+
+function openReport(matchId) {
+  const matchItem = state.groups
+    .flatMap(group => group.matches)
+    .find(item => item.id === matchId);
+  const report = matchItem?.reports?.find(item => reportDataUrl(item));
+  const dataUrl = reportDataUrl(report);
+  if (!dataUrl) {
+    alert("Zu diesem Ergebnis ist kein Spielbericht gespeichert.");
+    return;
+  }
+  const reportWindow = window.open("", "_blank", "noopener");
+  if (!reportWindow) {
+    alert("Der Spielbericht konnte nicht geoeffnet werden. Bitte Pop-up-Blocker pruefen.");
+    return;
+  }
+  reportWindow.document.write(`<!doctype html><title>${report.name || "Spielbericht"}</title><style>html,body{margin:0;height:100%;}iframe{border:0;width:100%;height:100%;}</style><iframe src="${dataUrl}"></iframe>`);
+  reportWindow.document.close();
 }
 
 function standingsTable(rows) {
@@ -654,6 +694,11 @@ els.groupList.addEventListener("click", event => {
 });
 
 els.overviewGrid.addEventListener("click", event => {
+  const reportButton = event.target.closest(".report-icon[data-report-match]");
+  if (reportButton) {
+    openReport(reportButton.dataset.reportMatch);
+    return;
+  }
   const button = event.target.closest(".toggle-extra-matches");
   if (!button) return;
   const block = button.closest(".group-block");
