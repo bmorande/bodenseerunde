@@ -15,14 +15,13 @@
     <div class="season-control">
       <label for="seasonYear">Saison</label>
       <input id="seasonYear" type="number" min="2026" max="2099" value="2026">
-      <button id="resetDemo" type="button" class="ghost">Beispieldaten laden</button>
     </div>
   </header>
 
   <main>
     <nav class="tabs" aria-label="Bereiche">
       <button class="tab active" type="button" data-view="overview">Uebersicht</button>
-      <button class="tab" type="button" data-view="planning">Saison planen</button>
+      <button class="tab" type="button" data-view="planning">Admin</button>
       <button class="tab" type="button" data-view="results">Ergebnis erfassen</button>
       <button class="tab" type="button" data-view="concept">Konzept</button>
     </nav>
@@ -41,8 +40,8 @@
     <section id="planning" class="view" aria-labelledby="planningTitle">
       <div class="section-head">
         <div>
-          <p class="eyebrow">Vor der Saison</p>
-          <h2 id="planningTitle">Gruppen flexibel zusammenstellen</h2>
+          <p class="eyebrow">Adminbereich</p>
+          <h2 id="planningTitle">Saison und Spielplan bearbeiten</h2>
         </div>
         <button id="addGroup" type="button">Gruppe hinzufuegen</button>
       </div>
@@ -94,6 +93,10 @@
               </label>
               <button id="addMatch" type="button" class="secondary">Hinzufuegen</button>
             </div>
+          </div>
+          <div class="schedule-tools">
+            <h3>Spielplan manuell bearbeiten</h3>
+            <p class="muted">Datum, Runde und Paarung koennen direkt geaendert werden. Loeschen entfernt die Begegnung aus dem Spielplan.</p>
           </div>
           <div id="scheduleEditor"></div>
         </div>

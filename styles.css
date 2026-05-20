@@ -124,14 +124,10 @@ p {
 
 .season-control {
   display: grid;
-  grid-template-columns: 100px auto;
+  grid-template-columns: minmax(140px, 1fr);
   gap: 8px;
   align-items: end;
   min-width: min(100%, 350px);
-}
-
-.season-control button {
-  grid-column: 1 / -1;
 }
 
 main {
@@ -270,7 +266,8 @@ main {
   margin: 14px 0 18px;
 }
 
-.manual-match {
+.manual-match,
+.schedule-tools {
   border-top: 1px solid var(--line);
   padding-top: 16px;
   margin-top: 18px;
@@ -369,7 +366,17 @@ th.number {
 }
 
 .schedule-row {
-  grid-template-columns: 110px minmax(0, 1fr) 100px;
+  grid-template-columns: 86px 140px minmax(150px, 1fr) minmax(150px, 1fr) 90px;
+}
+
+.schedule-row input,
+.schedule-row select {
+  padding: 8px;
+}
+
+.schedule-row button {
+  min-height: 38px;
+  padding: 8px 10px;
 }
 
 .selected-match {

@@ -75,7 +75,6 @@ const els = {
   overviewGrid: document.querySelector("#overviewGrid"),
   lastUpdated: document.querySelector("#lastUpdated"),
   seasonYear: document.querySelector("#seasonYear"),
-  resetDemo: document.querySelector("#resetDemo"),
   addGroup: document.querySelector("#addGroup"),
   groupList: document.querySelector("#groupList"),
   groupName: document.querySelector("#groupName"),
@@ -373,12 +372,18 @@ function renderTeamSelects(group) {
 
 function renderScheduleEditor(group) {
   const realMatches = group.matches.filter(item => !isBye(item.home) && !isBye(item.away));
+  const teamOptions = group.teams
+    .filter(team => !isBye(team))
+    .map(team => `<option value="${team}">${team}</option>`)
+    .join("");
   els.scheduleEditor.innerHTML = realMatches.length
     ? realMatches.map(item => `
-        <div class="schedule-row">
-          <span>${formatDate(item.date)}</span>
-          <strong>${item.home} - ${item.away}</strong>
-          <span>${hasResult(item) ? `${item.pointsHome}:${item.pointsAway}` : "offen"}</span>
+        <div class="schedule-row" data-match-id="${item.id}">
+          <input type="number" min="1" value="${item.round}" aria-label="Runde">
+          <input type="date" value="${item.date}" aria-label="Datum">
+          <select aria-label="Heim">${teamOptions.replace(`value="${item.home}"`, `value="${item.home}" selected`)}</select>
+          <select aria-label="Gast">${teamOptions.replace(`value="${item.away}"`, `value="${item.away}" selected`)}</select>
+          <button type="button" class="secondary" data-delete-match="${item.id}">Loeschen</button>
         </div>
       `).join("")
     : `<div class="empty">Noch kein Spielplan vorhanden.</div>`;
@@ -591,11 +596,6 @@ els.seasonYear.addEventListener("change", () => {
   saveState();
 });
 
-els.resetDemo.addEventListener("click", () => {
-  state = structuredClone(demoState);
-  saveState();
-});
-
 els.groupList.addEventListener("click", event => {
   const button = event.target.closest("button[data-group-id]");
   if (!button) return;
@@ -641,6 +641,36 @@ els.addMatch.addEventListener("click", () => {
   const group = currentGroup();
   if (!els.manualDate.value || !els.manualHome.value || !els.manualAway.value || els.manualHome.value === els.manualAway.value) return;
   group.matches.push(match(`${group.id}-manual-${Date.now()}`, nextRound(group), els.manualDate.value, els.manualHome.value, els.manualAway.value));
+  saveState();
+});
+
+els.scheduleEditor.addEventListener("change", event => {
+  const row = event.target.closest(".schedule-row[data-match-id]");
+  if (!row) return;
+  const group = currentGroup();
+  const item = group.matches.find(matchItem => matchItem.id === row.dataset.matchId);
+  if (!item) return;
+  const fields = row.querySelectorAll("input, select");
+  const nextRoundValue = Number(fields[0].value);
+  const nextDate = fields[1].value;
+  const nextHome = fields[2].value;
+  const nextAway = fields[3].value;
+  if (!nextRoundValue || !nextDate || !nextHome || !nextAway || nextHome === nextAway) {
+    renderPlanning();
+    return;
+  }
+  item.round = nextRoundValue;
+  item.date = nextDate;
+  item.home = nextHome;
+  item.away = nextAway;
+  saveState();
+});
+
+els.scheduleEditor.addEventListener("click", event => {
+  const button = event.target.closest("button[data-delete-match]");
+  if (!button) return;
+  const group = currentGroup();
+  group.matches = group.matches.filter(matchItem => matchItem.id !== button.dataset.deleteMatch);
   saveState();
 });
 
