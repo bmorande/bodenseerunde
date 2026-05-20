@@ -331,10 +331,15 @@ th.number {
   margin-bottom: 8px;
 }
 
-.next-matches {
+.next-matches,
+.played-matches {
   display: grid;
   gap: 8px;
   padding: 0 18px 18px;
+}
+
+.next-matches {
+  padding-bottom: 8px;
 }
 
 .match-row,
@@ -347,6 +352,20 @@ th.number {
   border-radius: 6px;
   padding: 10px;
   background: #fff;
+}
+
+.match-row.played {
+  grid-template-columns: 92px minmax(0, 1fr) 150px 150px;
+}
+
+.result-badge {
+  border-radius: 6px;
+  background: var(--soft);
+  color: var(--brand-dark);
+  font-weight: 700;
+  padding: 8px 10px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .match-row strong,
@@ -527,6 +546,10 @@ th.number {
 
   .match-row,
   .schedule-row {
+    grid-template-columns: 1fr;
+  }
+
+  .match-row.played {
     grid-template-columns: 1fr;
   }
 }
