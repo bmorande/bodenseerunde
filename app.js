@@ -317,9 +317,9 @@ function renderOverview() {
       ? played.map(item => `
           <div class="match-row played">
             <span>${formatDate(item.date)}</span>
-            <strong>${item.home} - ${item.away}</strong>
+            <span class="match-pairing">${item.home} - ${item.away}</span>
             <span class="result-badge">${item.pointsHome}:${item.pointsAway}</span>
-            <span class="score-detail">Saetze ${item.setsHome}:${item.setsAway} · Spiele ${item.gamesHome}:${item.gamesAway}</span>
+            <span class="score-detail">Saetze ${item.setsHome}:${item.setsAway}<br>Spiele ${item.gamesHome}:${item.gamesAway}</span>
             ${reportIcon(item)}
           </div>
         `).join("")
@@ -639,7 +639,7 @@ function calculateMatchFromDoubles(doubles) {
   doubles.forEach(doubleItem => {
     let doubleSetsHome = 0;
     let doubleSetsAway = 0;
-    doubleItem.sets.forEach(setItem => {
+    doubleItem.sets.forEach((setItem, setIndex) => {
       const home = setItem.home;
       const away = setItem.away;
       if (home === "" && away === "") return;
@@ -647,10 +647,17 @@ function calculateMatchFromDoubles(doubles) {
         totals.complete = false;
         return;
       }
-      totals.gamesHome += Number(home);
-      totals.gamesAway += Number(away);
-      if (Number(home) > Number(away)) doubleSetsHome += 1;
-      if (Number(away) > Number(home)) doubleSetsAway += 1;
+      const homeWonSet = Number(home) > Number(away);
+      const awayWonSet = Number(away) > Number(home);
+      if (setIndex === 2) {
+        totals.gamesHome += homeWonSet ? 1 : 0;
+        totals.gamesAway += awayWonSet ? 1 : 0;
+      } else {
+        totals.gamesHome += Number(home);
+        totals.gamesAway += Number(away);
+      }
+      if (homeWonSet) doubleSetsHome += 1;
+      if (awayWonSet) doubleSetsAway += 1;
     });
     totals.setsHome += doubleSetsHome;
     totals.setsAway += doubleSetsAway;

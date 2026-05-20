@@ -369,7 +369,11 @@ th.number {
 }
 
 .match-row.played {
-  grid-template-columns: 96px minmax(260px, 1fr) 82px minmax(180px, auto) 46px;
+  grid-template-columns: 96px minmax(220px, 1fr) 82px minmax(86px, auto) 46px;
+}
+
+.match-pairing {
+  color: var(--ink);
 }
 
 .result-badge {
@@ -385,7 +389,8 @@ th.number {
 
 .score-detail {
   white-space: nowrap;
-  font-size: 15px;
+  font-size: 14px;
+  line-height: 1.25;
 }
 
 .report-icon {
