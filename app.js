@@ -270,6 +270,20 @@ function renderOverview() {
           </div>
         `).join("")
       : `<div class="empty">Alle Ergebnisse sind erfasst.</div>`;
+    const played = group.matches
+      .filter(hasResult)
+      .filter(item => !isBye(item.home) && !isBye(item.away))
+      .sort((a, b) => `${b.date}-${b.round}`.localeCompare(`${a.date}-${a.round}`));
+    template.querySelector(".played-matches").innerHTML = played.length
+      ? played.map(item => `
+          <div class="match-row played">
+            <span>${formatDate(item.date)}</span>
+            <strong>${item.home} - ${item.away}</strong>
+            <span class="result-badge">${item.pointsHome}:${item.pointsAway} Doppel</span>
+            <span>Saetze ${item.setsHome}:${item.setsAway}<br>Spiele ${item.gamesHome}:${item.gamesAway}</span>
+          </div>
+        `).join("")
+      : `<div class="empty">Noch keine Ergebnisse erfasst.</div>`;
     els.overviewGrid.appendChild(template);
   });
 }
