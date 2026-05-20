@@ -355,13 +355,14 @@ function openReport(matchId) {
     alert("Zu diesem Ergebnis ist kein Spielbericht gespeichert.");
     return;
   }
-  const reportWindow = window.open("", "_blank", "noopener");
-  if (!reportWindow) {
-    alert("Der Spielbericht konnte nicht geoeffnet werden. Bitte Pop-up-Blocker pruefen.");
-    return;
-  }
-  reportWindow.document.write(`<!doctype html><title>${report.name || "Spielbericht"}</title><style>html,body{margin:0;height:100%;}iframe{border:0;width:100%;height:100%;}</style><iframe src="${dataUrl}"></iframe>`);
-  reportWindow.document.close();
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.target = "_blank";
+  link.rel = "noopener";
+  link.download = report.name || "spielbericht";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 function standingsTable(rows) {
