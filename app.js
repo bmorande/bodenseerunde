@@ -253,23 +253,40 @@ function renderOverview() {
   els.overviewGrid.innerHTML = "";
   state.groups.forEach(group => {
     const template = document.querySelector("#tableTemplate").content.cloneNode(true);
+    const groupBlock = template.querySelector(".group-block");
+    groupBlock.dataset.groupId = group.id;
     template.querySelector("h3").textContent = group.name;
     const realTeams = group.teams.filter(team => !isBye(team)).length;
     template.querySelector(".block-head span").textContent = `${realTeams} Mannschaften`;
     template.querySelector(".table-wrap").innerHTML = standingsTable(calculateStandings(group));
-    const next = group.matches
+    const openMatches = group.matches
       .filter(item => !hasResult(item))
       .filter(item => !isBye(item.home) && !isBye(item.away))
-      .slice(0, 4);
-    template.querySelector(".next-matches").innerHTML = next.length
-      ? next.map(item => `
+      .sort((a, b) => `${a.date}-${a.round}`.localeCompare(`${b.date}-${b.round}`));
+    const nextRound = openMatches[0]?.round;
+    const next = openMatches.filter(item => item.round === nextRound);
+    const rest = openMatches.filter(item => item.round !== nextRound);
+    template.querySelector(".next-matches").innerHTML = openMatches.length
+      ? `
+        ${next.map(item => `
           <div class="match-row">
             <span>${formatDate(item.date)}</span>
             <strong>${item.home} - ${item.away}</strong>
             <span>Runde ${item.round}</span>
           </div>
-        `).join("")
+        `).join("")}
+        ${rest.map(item => `
+          <div class="match-row extra-match" hidden>
+            <span>${formatDate(item.date)}</span>
+            <strong>${item.home} - ${item.away}</strong>
+            <span>Runde ${item.round}</span>
+          </div>
+        `).join("")}
+      `
       : `<div class="empty">Alle Ergebnisse sind erfasst.</div>`;
+    const toggleButton = template.querySelector(".toggle-extra-matches");
+    toggleButton.hidden = rest.length === 0;
+    toggleButton.textContent = `Restliche Spiele anzeigen (${rest.length})`;
     const played = group.matches
       .filter(hasResult)
       .filter(item => !isBye(item.home) && !isBye(item.away))
@@ -281,11 +298,30 @@ function renderOverview() {
             <strong>${item.home} - ${item.away}</strong>
             <span class="result-badge">${item.pointsHome}:${item.pointsAway} Doppel</span>
             <span>Saetze ${item.setsHome}:${item.setsAway}<br>Spiele ${item.gamesHome}:${item.gamesAway}</span>
+            ${reportIcon(item)}
           </div>
         `).join("")
       : `<div class="empty">Noch keine Ergebnisse erfasst.</div>`;
     els.overviewGrid.appendChild(template);
   });
+}
+
+function reportIcon(matchItem) {
+  normalizeMatch(matchItem);
+  const report = matchItem.reports[0];
+  if (!report) {
+    return `<span class="report-icon empty-report" title="Kein Spielbericht">-</span>`;
+  }
+  return `
+    <a class="report-icon" href="${report.dataUrl}" target="_blank" rel="noopener" title="Spielbericht oeffnen">
+      <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <path d="M14 2v6h6"></path>
+        <path d="M8 13h8"></path>
+        <path d="M8 17h5"></path>
+      </svg>
+    </a>
+  `;
 }
 
 function standingsTable(rows) {
@@ -615,6 +651,20 @@ els.groupList.addEventListener("click", event => {
   if (!button) return;
   state.selectedGroupId = button.dataset.groupId;
   render();
+});
+
+els.overviewGrid.addEventListener("click", event => {
+  const button = event.target.closest(".toggle-extra-matches");
+  if (!button) return;
+  const block = button.closest(".group-block");
+  const extras = block.querySelectorAll(".extra-match");
+  const shouldShow = [...extras].some(item => item.hidden);
+  extras.forEach(item => {
+    item.hidden = !shouldShow;
+  });
+  button.textContent = shouldShow
+    ? "Restliche Spiele ausblenden"
+    : `Restliche Spiele anzeigen (${extras.length})`;
 });
 
 els.addGroup.addEventListener("click", () => {
