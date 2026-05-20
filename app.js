@@ -1,4 +1,7 @@
 const STORAGE_KEY = "tennisrunde-saison-v1";
+const CONFIG = window.BODENSEERUNDE_CONFIG || {};
+let supabaseClient = null;
+let storageMode = "local";
 
 const demoState = {
   year: 2026,
@@ -64,7 +67,7 @@ const demoState = {
   updatedAt: null
 };
 
-let state = loadState();
+let state = structuredClone(demoState);
 
 const els = {
   tabs: document.querySelectorAll(".tab"),
@@ -123,7 +126,9 @@ function match(id, round, date, home, away, gamesHome = null, gamesAway = null, 
   };
 }
 
-function loadState() {
+async function loadState() {
+  const remote = await loadRemoteState();
+  if (remote) return remote;
   const saved = localStorage.getItem(STORAGE_KEY);
   if (!saved) return structuredClone(demoState);
   try {
@@ -133,10 +138,59 @@ function loadState() {
   }
 }
 
-function saveState() {
+async function saveState() {
   state.updatedAt = new Date().toISOString();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   render();
+  await saveRemoteState();
+}
+
+function configureRemoteStore() {
+  const hasConfig = CONFIG.supabaseUrl && CONFIG.supabaseAnonKey && window.supabase;
+  if (!hasConfig) {
+    storageMode = "local";
+    return;
+  }
+  supabaseClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
+  storageMode = "online";
+}
+
+async function loadRemoteState() {
+  if (!supabaseClient) return null;
+  const seasonId = CONFIG.seasonId || String(demoState.year);
+  const { data, error } = await supabaseClient
+    .from("app_state")
+    .select("data")
+    .eq("id", seasonId)
+    .maybeSingle();
+  if (error) {
+    console.warn("Online-Daten konnten nicht geladen werden.", error);
+    storageMode = "local";
+    return null;
+  }
+  if (!data || !data.data || Object.keys(data.data).length === 0) {
+    await saveRemoteState(structuredClone(demoState));
+    return structuredClone(demoState);
+  }
+  storageMode = "online";
+  return data.data;
+}
+
+async function saveRemoteState(nextState = state) {
+  if (!supabaseClient) return;
+  const seasonId = CONFIG.seasonId || String(nextState.year || demoState.year);
+  const { error } = await supabaseClient
+    .from("app_state")
+    .upsert({
+      id: seasonId,
+      data: nextState,
+      updated_at: new Date().toISOString()
+    });
+  if (error) {
+    console.warn("Online-Daten konnten nicht gespeichert werden.", error);
+    storageMode = "local";
+    render();
+  }
 }
 
 function currentGroup() {
@@ -189,8 +243,8 @@ function formatDate(dateText) {
 function render() {
   els.seasonYear.value = state.year;
   els.lastUpdated.textContent = state.updatedAt
-    ? `Gespeichert ${new Intl.DateTimeFormat("de-DE", { dateStyle: "short", timeStyle: "short" }).format(new Date(state.updatedAt))}`
-    : "Noch nicht gespeichert";
+    ? `${storageMode === "online" ? "Online gespeichert" : "Lokal gespeichert"} ${new Intl.DateTimeFormat("de-DE", { dateStyle: "short", timeStyle: "short" }).format(new Date(state.updatedAt))}`
+    : `${storageMode === "online" ? "Online verbunden" : "Lokale Demo"} - noch nicht gespeichert`;
   renderOverview();
   renderPlanning();
   renderResults();
@@ -675,16 +729,20 @@ els.linkList.addEventListener("click", event => {
 });
 
 const initialMatch = new URLSearchParams(location.search).get("spiel");
-if (initialMatch) {
-  const group = state.groups.find(item => item.matches.some(matchItem => matchItem.id === initialMatch));
-  if (group) {
-    state.selectedGroupId = group.id;
-    setTimeout(() => {
+
+async function init() {
+  configureRemoteStore();
+  state = await loadState();
+  render();
+  if (initialMatch) {
+    const group = state.groups.find(item => item.matches.some(matchItem => matchItem.id === initialMatch));
+    if (group) {
+      state.selectedGroupId = group.id;
       document.querySelector('[data-view="results"]').click();
       els.resultMatch.value = initialMatch;
       renderSelectedMatch();
-    });
+    }
   }
 }
 
-render();
+init();
