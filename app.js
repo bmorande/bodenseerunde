@@ -564,7 +564,7 @@ function renderSelectedMatch() {
   `).join("");
   els.calculateResult.disabled = item.locked;
   els.saveResult.disabled = item.locked;
-  els.reportFile.disabled = item.locked;
+  els.reportFile.disabled = item.locked || item.reports.length > 0;
   els.approveResult.disabled = item.locked || !hasResult(item);
   els.unlockResult.disabled = !item.locked;
   els.computedResult.textContent = resultSummary(item);
@@ -697,12 +697,14 @@ function resultSummary(matchItem) {
 function renderReports(matchItem) {
   normalizeMatch(matchItem);
   els.reportList.innerHTML = matchItem.reports.length
-    ? matchItem.reports.map(report => `
-        <a class="report-link" href="${report.dataUrl}" target="_blank" rel="noopener">
-          <strong>${report.name}</strong>
-          <span>oeffnen / drucken</span>
-        </a>
-      `).join("")
+    ? `
+        <div class="report-link">
+          <strong>${matchItem.reports[0].name}</strong>
+          <button type="button" class="secondary" data-open-selected-report>Oeffnen</button>
+          <button type="button" class="secondary" data-delete-report ${matchItem.locked ? "disabled" : ""}>Loeschen</button>
+        </div>
+        <p class="muted">Zum Hochladen eines anderen Spielberichts bitte zuerst den vorhandenen Bericht loeschen.</p>
+      `
     : `<div class="empty">Noch kein Spielbericht hochgeladen.</div>`;
 }
 
@@ -878,21 +880,40 @@ els.saveResult.addEventListener("click", () => {
 els.reportFile.addEventListener("change", () => {
   const item = selectedResultMatch();
   const file = els.reportFile.files[0];
-  if (!item || item.locked || !file) return;
+  if (!item || item.locked || !file || item.reports.length > 0) {
+    els.reportFile.value = "";
+    renderSelectedMatch();
+    return;
+  }
   const reader = new FileReader();
   reader.addEventListener("load", () => {
     normalizeMatch(item);
-    item.reports.push({
+    item.reports = [{
       id: `report-${Date.now()}`,
       name: file.name,
       type: file.type || "application/octet-stream",
       dataUrl: reader.result,
       uploadedAt: new Date().toISOString()
-    });
+    }];
     els.reportFile.value = "";
     saveState();
   });
   reader.readAsDataURL(file);
+});
+
+els.reportList.addEventListener("click", event => {
+  const item = selectedResultMatch();
+  if (!item) return;
+  if (event.target.closest("[data-open-selected-report]")) {
+    openReport(item.id);
+    return;
+  }
+  if (event.target.closest("[data-delete-report]")) {
+    if (item.locked) return;
+    item.reports = [];
+    els.reportFile.value = "";
+    saveState();
+  }
 });
 
 els.approveResult.addEventListener("click", () => {
